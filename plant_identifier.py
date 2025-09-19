@@ -7,7 +7,7 @@ while True: # get cam frames forever
     if not ret: # if cam fails exit loop
         break
 
-    cv2.imshow =('Video', frame) # image show takes in window title and the image to show
+    cv2.imshow('Video', frame) # image show takes in window title and the image to show
 
     if cv2.waitKey(1) & 0xFF == ord('q'): # wait 1ms for a key press, if press q, exit loop. & 0xFF is so it works better and ord('q') is code for q key
         break
