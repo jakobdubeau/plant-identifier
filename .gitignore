@@ -1,0 +1,62 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Project specific
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.avi
+test_images/
+output/
+
+# YOLO weights (they download automatically)
+*.pt
+yolov*.pt
+
+# Logs
+*.log
