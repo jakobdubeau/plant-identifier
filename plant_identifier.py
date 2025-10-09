@@ -1,7 +1,7 @@
 import cv2
 from ultralytics import YOLO
 
-model = YOLO('yolo8n.pt') # load a custom yolo model
+model = YOLO('yolov8n.pt') # load a custom yolo model
 cap = cv2.VideoCapture(0) # cam object, opens webcam
 
 cv2.namedWindow('Plant Identifier', cv2.WINDOW_NORMAL) # resizable window
