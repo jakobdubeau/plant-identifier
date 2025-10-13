@@ -66,9 +66,11 @@ while True: # get cam frames forever
                 confidence = float(box.conf[0]) # confidence score
 
                 if 'plant' in class_name.lower() and confidence > 0.3: # check if plant appears in lowercase class name and confidence is enough
-                    label = f"{class_name}: {confidence:.2f}" # text label containing object name and confidence (2 decimal places)
-                    cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2) # draw on frame, label for text, others self explanatory
+                    image_crop = crop_plant(frame, (x1, y1, x2, y2)) # crop function
+                    species = identify_plant(image_crop) # identify plant function
+                    label = species
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2) # cv2 function to draw rectangle on frame, bounded by x1, y1 and x2, y2 (box coords for result object), rgb colour for green, rectangle thickness
+                    cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2) # draw on frame, label for text, others self explanatory
 
     cv2.imshow('Plant Identifier', frame) # image show takes in window title and the image to show
 
