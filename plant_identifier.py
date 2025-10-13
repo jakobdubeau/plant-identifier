@@ -1,9 +1,11 @@
 import cv2 # computer vision library, opencv internally imports NumPy
 from ultralytics import YOLO # object detection with pre trained model
 import requests # https calls to api
-import base64 # image to text format
 from PIL import Image # image processing library
 from io import BytesIO # handles image data in memory
+
+from dotenv import load_dotenv
+import os
 
 model = YOLO('yolov8n.pt') # load a custom yolo model
 cap = cv2.VideoCapture(0) # cam object, opens webcam
@@ -20,30 +22,40 @@ def identify_plant(image_crop):
         rgb_crop = cv2.cvtColor(image_crop, cv2.COLOR_BGR2RGB) # change bgr to rgb, convertColour(image(array of pixels), convert from bgr to rgb)
         pil_image = Image.fromarray(rgb_crop) # convert numpy array to pil image object
 
-        if max(pil_image.size) > 512:
-            pil_image.thumbnail((512, 512), Image.Resampling.LANCZOS) 
+        if max(pil_image.size) > 1024:
+            pil_image.thumbnail((1024, 1024), Image.Resampling.LANCZOS) 
 
         buffer = BytesIO() # in memory file, pil needs to save image to get as bytes so we put it in ram
-        pil_image.save(buffer, format='JPEG', quality=85) # save image in buffer (in memory file)
-        image_bytes = buffer.getvalue() # store buffer data as raw bytes
+        pil_image.save(buffer, format='JPEG', quality=90) # save image in buffer (in memory file)
+        buffer.seek(0)
 
-        image_b64 = base64.b64encode(image_bytes).decode('utf-8') # converts jepg bytes to b64 bytes, then b64 bytes to b64 string (better format)
+        load_dotenv()
+        api_key = os.getenv('PLANTNET_API_KEY')
 
-        url = "https://api.inaturalist.org/v1/computervision/score_image"
-        data = {'image': image_b64, 'taxon_id': 47126} # send b64 string (plant photo) and only look for plants
+        url = f"https://my-api.plantnet.org/v2/identify/all?api-key={api_key}"
+        files = {'images': ('image.jpg', buffer, 'image/jpeg')}
 
-        response = requests.post(url, json=data, timeout=10) # post sends data to server
+        response = requests.post(url, files=files, timeout=15) # post sends data to server
 
         if response.status_code == 200:
             results = response.json() # convert json to dictionary
             if 'results' in results and results['results']: # check if results exists in dictionary and not empty
                 top = results['results'][0] # get top item for best match
-                taxon = top.get('taxon', {})
-                name = taxon.get('preferred_common_name') or taxon.get('name', 'Unknown') # get common name, or scientific, or unknown
-                conf = top.get('score', 0)
-                return f"{name} ({conf:.2f})"
-            
-            return "Unknown"
+                species = top.get('species', {})
+                common_names = species.get('commonNames', [])
+                scientific_name = species.get('scientificNameWithoutAuthor', 'Unknown')
+
+                if common_names:
+                    name = common_names[0]
+                else:
+                    name = scientific_name
+
+                score = top.get('score', 0)
+                return f"{name} ({score:.2f})"
+            else:
+                return "No match found"
+        else:
+            return f"API Error {response.status_code}"
             
     except Exception as e:
         return f"Error: {str(e)}"
