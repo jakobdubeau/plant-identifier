@@ -1,10 +1,52 @@
-import cv2
-from ultralytics import YOLO
+import cv2 # computer vision library, opencv internally imports NumPy
+from ultralytics import YOLO # object detection with pre trained model
+import requests # https calls to api
+import base64 # image to text format
+from PIL import Image # image processing library
+from io import BytesIO # handles image data in memory
 
 model = YOLO('yolov8n.pt') # load a custom yolo model
 cap = cv2.VideoCapture(0) # cam object, opens webcam
 
 cv2.namedWindow('Plant Identifier', cv2.WINDOW_NORMAL) # resizable window
+
+def crop_plant(frame, bbox): # function to just send plant, not full screen
+    x1, y1, x2, y2 = bbox
+    cropped = frame[y1:y2, x1:x2] # takes frame of rows from y1 to y2, and columns from x1 to x2 (array slicing)
+    return cropped
+
+def identify_plant(image_crop):
+    try:
+        rgb_crop = cv2.cvtColor(image_crop, cv2.COLOR_BGR2RGB) # change bgr to rgb, convertColour(image(array of pixels), convert from bgr to rgb)
+        pil_image = Image.fromarray(rgb_crop) # convert numpy array to pil image object
+
+        if max(pil_image.size) > 512:
+            pil_image.thumbnail((512, 512), Image.Resampling.LANCZOS) 
+
+        buffer = BytesIO() # in memory file, pil needs to save image to get as bytes so we put it in ram
+        pil_image.save(buffer, format='JPEG', quality=85) # save image in buffer (in memory file)
+        image_bytes = buffer.getvalue() # store buffer data as raw bytes
+
+        image_b64 = base64.b64encode(image_bytes).decode('utf-8') # converts jepg bytes to b64 bytes, then b64 bytes to b64 string (better format)
+
+        url = "https://api.inaturalist.org/v1/computervision/score_image"
+        data = {'image': image_b64, 'taxon_id': 47126} # send b64 string (plant photo) and only look for plants
+
+        response = requests.post(url, json=data, timeout=10) # post sends data to server
+
+        if response.status_code == 200:
+            results = response.json() # convert json to dictionary
+            if 'results' in results and results['results']: # check if results exists in dictionary and not empty
+                top = results['results'][0] # get top item for best match
+                taxon = top.get('taxon', {})
+                name = taxon.get('preferred_common_name') or taxon.get('name', 'Unknown') # get common name, or scientific, or unknown
+                conf = top.get('score', 0)
+                return f"{name} ({conf:.2f})"
+            
+            return "Unknown"
+            
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 while True: # get cam frames forever
     ret, frame = cap.read() # ret = boolean return, frame = image(pixels). So, while capture reads, it returns a true/false if works and the image
