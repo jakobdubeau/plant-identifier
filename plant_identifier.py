@@ -3,14 +3,24 @@ from ultralytics import YOLO # object detection with pre trained model
 import requests # https calls to api
 from PIL import Image # image processing library
 from io import BytesIO # handles image data in memory
-
+import threading
 from dotenv import load_dotenv
 import os
 
 model = YOLO('yolov8n.pt') # load a custom yolo model
 cap = cv2.VideoCapture(0) # cam object, opens webcam
-
 cv2.namedWindow('Plant Identifier', cv2.WINDOW_NORMAL) # resizable window
+
+plant_cache = {} # dictionary for plant identifications which thread finds
+identifying = set() # plants currently being identified
+
+def get_cache_key(bbox): # function to ensure new calls aren't made for every time plant moves a bit
+    x1, y1, x2, y2 = bbox
+    center_x = (x1 + x2) // 2 # finds middle
+    center_y = (y1 + y2) // 2
+    stable_x = (center_x // 50) * 50 # round to nearest 50px
+    stable_y = (center_y // 50) * 50
+    return f"{stable_x}_{stable_y}"
 
 def crop_plant(frame, bbox): # function to just send plant, not full screen
     x1, y1, x2, y2 = bbox
@@ -78,8 +88,15 @@ while True: # get cam frames forever
                 confidence = float(box.conf[0]) # confidence score
 
                 if 'plant' in class_name.lower() and confidence > 0.3: # check if plant appears in lowercase class name and confidence is enough
-                    image_crop = crop_plant(frame, (x1, y1, x2, y2)) # crop function
-                    species = identify_plant(image_crop) # identify plant function
+                    bbox_id = get_cache_key((x1, y1, x2, y2))
+                    if bbox_id not in plant_cache and bbox_id not in identifying:
+                        identifying.add(bbox_id)
+                        image_crop = crop_plant(frame, (x1, y1, x2, y2)) # crop function
+
+                        def identify_async(crop, bid): # bid = bbox_id 
+                            species = identify_plant(crop) # identify plant function
+                            plant_cache[bid] = species
+                            identifying.discard(bid)
                     label = species
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2) # cv2 function to draw rectangle on frame, bounded by x1, y1 and x2, y2 (box coords for result object), rgb colour for green, rectangle thickness
                     cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2) # draw on frame, label for text, others self explanatory
