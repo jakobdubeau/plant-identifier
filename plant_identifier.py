@@ -87,7 +87,7 @@ while True: # get cam frames forever
                 class_name = model.names[class_id] # convert numbers to names with id
                 confidence = float(box.conf[0]) # confidence score
 
-                if 'plant' in class_name.lower() and confidence > 0.2: # check if plant appears in lowercase class name and confidence is enough
+                if 'plant' in class_name.lower() and confidence > 0.1: # check if plant appears in lowercase class name and confidence is enough
                     bbox_id = get_cache_key((x1, y1, x2, y2))
 
                     if bbox_id not in plant_cache and bbox_id not in identifying:
@@ -104,17 +104,16 @@ while True: # get cam frames forever
                         thread.start()
 
                     if bbox_id in plant_cache:
-                        label = plant_cache[bbox_id]
-                        colour = (0, 255, 0)
+                        if "No match found" not in plant_cache[bbox_id] and "Error" not in plant_cache[bbox_id]:
+                            label = plant_cache[bbox_id]
+                            colour = (0, 255, 0)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), colour, 2)
+                            cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2)
                     elif bbox_id in identifying:
                         label = "Identifying..."
                         colour = (0, 255, 255)
-                    else:
-                        label = "Plant detected"
-                        colour = (255, 0, 0)
-
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), colour, 2) # cv2 function to draw rectangle on frame, bounded by x1, y1 and x2, y2 (box coords for result object), rgb colour for green, rectangle thickness
-                    cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2) # draw on frame, label for text, others self explanatory
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), colour, 2)
+                        cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2)
 
     cv2.imshow('Plant Identifier', frame) # image show takes in window title and the image to show
 
