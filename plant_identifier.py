@@ -6,6 +6,7 @@ from io import BytesIO # handles image data in memory
 import threading
 from dotenv import load_dotenv
 import os
+import time
 
 model = YOLO('yolov8n.pt') # load a custom yolo model
 cap = cv2.VideoCapture(0) # cam object, opens webcam
@@ -13,6 +14,7 @@ cv2.namedWindow('Plant Identifier', cv2.WINDOW_NORMAL) # resizable window
 
 plant_cache = {} # dictionary for plant identifications which thread finds
 identifying = set() # plants currently being identified
+last_seen = {}
 
 def get_cache_key(bbox): # function to ensure new calls aren't made for every time plant moves a bit
     x1, y1, x2, y2 = bbox
@@ -107,6 +109,7 @@ while True: # get cam frames forever
                         if "No match found" not in plant_cache[bbox_id] and "Error" not in plant_cache[bbox_id]:
                             label = plant_cache[bbox_id]
                             colour = (0, 255, 0)
+                            last_seen[bbox_id] = time.time()
                             cv2.rectangle(frame, (x1, y1), (x2, y2), colour, 2)
                             cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2)
                     elif bbox_id in identifying:
@@ -115,7 +118,13 @@ while True: # get cam frames forever
                         cv2.rectangle(frame, (x1, y1), (x2, y2), colour, 2)
                         cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2)
 
-    # cv2.putText(frame, "Press 'Q' to quit", (10, frame.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    current_time = time.time()
+    to_remove = [k for k, v in last_seen.items() if current_time - v > 5]
+    for k in to_remove:
+        plant_cache.pop(k, None)
+        last_seen.pop(k, None)
+
+    cv2.putText(frame, "Press 'Q' to quit", (10, frame.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
     cv2.imshow('Plant Identifier', frame) # image show takes in window title and the image to show
 
