@@ -115,6 +115,8 @@ while True: # get cam frames forever
                         cv2.rectangle(frame, (x1, y1), (x2, y2), colour, 2)
                         cv2.putText(frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2)
 
+    # cv2.putText(frame, "Press 'Q' to quit", (10, frame.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
     cv2.imshow('Plant Identifier', frame) # image show takes in window title and the image to show
 
     if cv2.waitKey(1) & 0xFF == ord('q'): # wait 1ms for a key press, if press q, exit loop. & 0xFF is so it works better and ord('q') is code for q key
