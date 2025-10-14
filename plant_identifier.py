@@ -87,7 +87,7 @@ while True: # get cam frames forever
                 class_name = model.names[class_id] # convert numbers to names with id
                 confidence = float(box.conf[0]) # confidence score
 
-                if 'plant' in class_name.lower() and confidence > 0.1: # check if plant appears in lowercase class name and confidence is enough
+                if ('plant' in class_name.lower() or 'broccoli' in class_name.lower()) and confidence > 0.1: # check if plant appears in lowercase class name and confidence is enough
                     bbox_id = get_cache_key((x1, y1, x2, y2))
 
                     if bbox_id not in plant_cache and bbox_id not in identifying:
